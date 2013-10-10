@@ -8,12 +8,13 @@ import android.widget.Button;
 import android.widget.TextView;
 
 import com.octo.android.robospice.SpiceManager;
+import com.octo.android.robospice.SpiceService;
 import com.octo.android.robospice.persistence.exception.SpiceException;
 import com.octo.android.robospice.request.listener.RequestListener;
 
 public class MainActivity extends Activity {
 
-	private SpiceManager spiceManager = new SpiceManager(SimpleService.class);
+	private SpiceManager spiceManager = new SpiceManager(SpiceService.class);
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -27,10 +28,10 @@ public class MainActivity extends Activity {
 			@Override
 			public void onClick(View v) {
 				
-				UploadRequest request = new UploadRequest();
-				UploadRequestListener requestListener = new UploadRequestListener();
+				//SpiceRequest request = new SpiceRequest();
+				//UploadRequestListener requestListener = new UploadRequestListener();
 				
-				spiceManager.execute(request, requestListener);
+				//spiceManager.execute(request, requestListener);
 			}
 			
 		});
