@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.lang.*;
 
 import android.app.Activity;
 import android.content.ContentResolver;
@@ -14,6 +15,7 @@ import android.hardware.Camera;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Handler;
 import android.provider.MediaStore;
 import android.util.Log;
 import android.view.View;
@@ -34,36 +36,53 @@ public class MainActivity extends Activity {
 	private int PICTURE = 0;
 	private Bitmap photo;
 	private Camera camera;
+	private Runnable cameraTask;
+	private Handler handler;
+	private long delay;
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
 		
-		camera = Camera.open();
+		this.delay = 1000;
+		this.camera = Camera.open();
+		this.handler = new Handler();
+		this.cameraTask = new Runnable() {
+			@Override
+			public void run()
+			{
+				runCamera();
+				handler.postDelayed(this, delay);
+			}
+		};
 		
 		Button startBtn = (Button) findViewById(R.id.button1);
 		
 		startBtn.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View v) {
-				
-				try {
-					//set camera parameters
-					//camera.setParameters(parameters);
-					camera.startPreview();
-					camera.takePicture(null, null, mCall);
-				} catch (RuntimeException e) {
-					Log.d("CAMERA", e.getMessage());
-				}
-				
-				//SpiceRequest request = new SpiceRequest();
-				//UploadRequestListener requestListener = new UploadRequestListener();
-				
-				//spiceManager.execute(request, requestListener);
+				handler.post(cameraTask);
 			}
 		});
 		
+	}
+	
+	private void runCamera()
+	{
+		try {
+			//set camera parameters
+			//camera.setParameters(parameters);
+			camera.startPreview();
+			camera.takePicture(null, null, mCall);
+		} catch (RuntimeException e) {
+			Log.d("CAMERA", e.getMessage());
+		}
+		
+		//SpiceRequest request = new SpiceRequest();
+		//UploadRequestListener requestListener = new UploadRequestListener();
+		
+		//spiceManager.execute(request, requestListener);
 	}
 	
 	Camera.PictureCallback mCall = new Camera.PictureCallback()
