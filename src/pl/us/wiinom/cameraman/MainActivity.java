@@ -27,6 +27,7 @@ import android.widget.TextView;
 import com.octo.android.robospice.SpiceManager;
 import com.octo.android.robospice.SpiceService;
 import com.octo.android.robospice.persistence.exception.SpiceException;
+import com.octo.android.robospice.request.SpiceRequest;
 import com.octo.android.robospice.request.listener.RequestListener;
 
 public class MainActivity extends Activity {
@@ -78,11 +79,6 @@ public class MainActivity extends Activity {
 		} catch (RuntimeException e) {
 			Log.d("CAMERA", e.getMessage());
 		}
-		
-		//SpiceRequest request = new SpiceRequest();
-		//UploadRequestListener requestListener = new UploadRequestListener();
-		
-		//spiceManager.execute(request, requestListener);
 	}
 	
 	Camera.PictureCallback mCall = new Camera.PictureCallback()
@@ -93,6 +89,11 @@ public class MainActivity extends Activity {
 			Bitmap photo = BitmapFactory.decodeByteArray(image, 0, image.length);
 			ImageView iv = (ImageView) findViewById(R.id.imageView1);
 			iv.setImageBitmap(photo);
+			
+			UploadRequest request = new UploadRequest(photo, getApplicationContext());
+			UploadRequestListener requestListener = new UploadRequestListener();
+			
+			spiceManager.execute(request, requestListener);
 		}
   
       
@@ -107,6 +108,7 @@ public class MainActivity extends Activity {
 	@Override
 	protected void onStop() {
 		spiceManager.shouldStop();
+		handler.removeCallbacks(cameraTask);
 		super.onStop();
 	}
 	
