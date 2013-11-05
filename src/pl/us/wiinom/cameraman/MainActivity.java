@@ -34,19 +34,19 @@ public class MainActivity extends Activity {
 
 	private SpiceManager spiceManager = new SpiceManager(SimpleService.class);
 	private Uri uri;
-	private int PICTURE = 0;
-	private Bitmap photo;
 	private Camera camera;
 	private Runnable cameraTask;
 	private Handler handler;
-	private long delay;
+	private long interval;
+	private Bitmap prevPhoto;
 	
 	@Override
-	protected void onCreate(Bundle savedInstanceState) {
+	protected void onCreate(Bundle savedInstanceState)
+	{
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
 		
-		this.delay = 1000;
+		this.interval = 1000;
 		this.camera = Camera.open();
 		this.handler = new Handler();
 		this.cameraTask = new Runnable() {
@@ -54,77 +54,76 @@ public class MainActivity extends Activity {
 			public void run()
 			{
 				runCamera();
-				handler.postDelayed(this, delay);
+				handler.postDelayed(this, interval);
 			}
 		};
 		
 		Button startBtn = (Button) findViewById(R.id.button1);
-		
 		startBtn.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View v) {
 				handler.post(cameraTask);
 			}
 		});
-		
 	}
 	
 	private void runCamera()
 	{
-		try {
-			//set camera parameters
+		try
+		{
 			//camera.setParameters(parameters);
 			camera.startPreview();
-			camera.takePicture(null, null, mCall);
-		} catch (RuntimeException e) {
+			camera.takePicture(null, null, cameraCallback);
+		}
+		catch (RuntimeException e)
+		{
 			Log.d("CAMERA", e.getMessage());
 		}
 	}
 	
-	Camera.PictureCallback mCall = new Camera.PictureCallback()
-    {
-
+	Camera.PictureCallback cameraCallback = new Camera.PictureCallback() {
 		@Override
-		public void onPictureTaken(byte[] image, Camera camera) {
+		public void onPictureTaken(byte[] image, Camera camera)
+		{
 			Bitmap photo = BitmapFactory.decodeByteArray(image, 0, image.length);
 			ImageView iv = (ImageView) findViewById(R.id.imageView1);
 			iv.setImageBitmap(photo);
 			
-			UploadRequest request = new UploadRequest(photo, getApplicationContext());
+			UploadRequest request = new UploadRequest(photo, 90, prevPhoto, getApplicationContext());
 			UploadRequestListener requestListener = new UploadRequestListener();
 			
 			spiceManager.execute(request, requestListener);
 		}
-  
-      
     };
 	
 	@Override
-	protected void onStart() {
+	protected void onStart()
+	{
 		super.onStart();
 		spiceManager.start(this);
 	}
 
 	@Override
-	protected void onStop() {
+	protected void onStop()
+	{
 		spiceManager.shouldStop();
 		handler.removeCallbacks(cameraTask);
 		super.onStop();
 	}
 	
-	class UploadRequestListener implements RequestListener<String> {
-
+	class UploadRequestListener implements RequestListener<String>
+	{
 		@Override
-		public void onRequestFailure(SpiceException arg0) {
+		public void onRequestFailure(SpiceException arg0)
+		{
 			// TODO Auto-generated method stub
 			
 		}
 
 		@Override
-		public void onRequestSuccess(String arg0) {
+		public void onRequestSuccess(String arg0)
+		{
 			
 		}
-		
 	}
-
 }
