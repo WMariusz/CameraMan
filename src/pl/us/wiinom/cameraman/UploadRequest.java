@@ -83,12 +83,14 @@ public class UploadRequest extends SpiceRequest<String>
 		
 	    if(this.prevBitmap != null)
 	    {
+	    	int maxLuminance = 255;
+	    	
 	    	if(threshold >= 1)
-	    		threshold = 0xffffffff;
+	    		threshold = maxLuminance;
 	    	else if(threshold <= 0)
 	    		threshold = 0;
 	    	else
-	    		threshold = threshold * 0xffffffff;
+	    		threshold = threshold * maxLuminance;
 	    			
 	    	int[] size = { 640, 480 };
 	    	int[] pixelsPrev = new int[size[0] * size[1]];
@@ -98,12 +100,14 @@ public class UploadRequest extends SpiceRequest<String>
 	    	this.prevBitmap = Bitmap.createScaledBitmap(this.prevBitmap, size[0], size[1], false);
 	    	Bitmap scaledBitmap = Bitmap.createScaledBitmap(this.bitmap, size[0], size[1], false);
 	        
-	        this.prevBitmap.getPixels(pixelsPrev, 0, 0, 0, 0, size[0], size[1]);
-	        scaledBitmap.getPixels(pixels, 0, 0, 0, 0, size[0], size[1]);
+	        this.prevBitmap.getPixels(pixelsPrev, 0, size[0], 0, 0, size[0], size[1]);
+	        scaledBitmap.getPixels(pixels, 0, size[0], 0, 0, size[0], size[1]);
 	        
 	        for(int i = 0; i < pixelsPrev.length; i++)
 	        {
-	        	if(Math.abs(pixelsPrev[i] - pixels[i]) >= threshold)
+	        	if(Math.abs(((pixelsPrev[i] >> 16) & 0xff) - ((pixels[i] >> 16) & 0xff)) >= threshold
+	        		|| Math.abs(((pixelsPrev[i] >> 8) & 0xff) - ((pixels[i] >> 8) & 0xff)) >= threshold
+	        		|| Math.abs((pixelsPrev[i] & 0xff) - (pixels[i] & 0xff)) >= threshold)
 	        		differentPixels++;
 	        }
 	        
@@ -114,8 +118,6 @@ public class UploadRequest extends SpiceRequest<String>
 	        	Log.d("MotionDetection", "Detected! Pixels: " + differentPixels);
 	        }
 	    }
-	    
-	    this.prevBitmap = Bitmap.createScaledBitmap(this.bitmap, this.bitmap.getWidth(), this.bitmap.getHeight(), false);
 	    
 	    return motionDetected;
 	}

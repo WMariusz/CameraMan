@@ -88,11 +88,13 @@ public class MainActivity extends Activity {
 			Bitmap photo = BitmapFactory.decodeByteArray(image, 0, image.length);
 			ImageView iv = (ImageView) findViewById(R.id.imageView1);
 			iv.setImageBitmap(photo);
-			
+
 			UploadRequest request = new UploadRequest(photo, 90, prevPhoto, getApplicationContext());
 			UploadRequestListener requestListener = new UploadRequestListener();
 			
 			spiceManager.execute(request, requestListener);
+			
+			prevPhoto = Bitmap.createScaledBitmap(photo, photo.getWidth(), photo.getHeight(), false);
 		}
     };
 	
@@ -123,7 +125,6 @@ public class MainActivity extends Activity {
 		@Override
 		public void onRequestSuccess(String arg0)
 		{
-			
 		}
 	}
 }
