@@ -39,25 +39,23 @@ public class MainActivity extends Activity {
 	private Handler handler;
 	private long interval;
 	private Bitmap prevPhoto;
-	
+
 	@Override
-	protected void onCreate(Bundle savedInstanceState)
-	{
+	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
-		
+
 		this.interval = 1000;
 		this.camera = Camera.open();
 		this.handler = new Handler();
 		this.cameraTask = new Runnable() {
 			@Override
-			public void run()
-			{
+			public void run() {
 				runCamera();
 				handler.postDelayed(this, interval);
 			}
 		};
-		
+
 		Button startBtn = (Button) findViewById(R.id.button1);
 		startBtn.setOnClickListener(new OnClickListener() {
 			@Override
@@ -66,65 +64,58 @@ public class MainActivity extends Activity {
 			}
 		});
 	}
-	
-	private void runCamera()
-	{
-		try
-		{
-			//camera.setParameters(parameters);
+
+	private void runCamera() {
+		try {
+			// camera.setParameters(parameters);
 			camera.startPreview();
 			camera.takePicture(null, null, cameraCallback);
-		}
-		catch (RuntimeException e)
-		{
+		} catch (RuntimeException e) {
 			Log.d("CAMERA", e.getMessage());
 		}
 	}
-	
+
 	Camera.PictureCallback cameraCallback = new Camera.PictureCallback() {
 		@Override
-		public void onPictureTaken(byte[] image, Camera camera)
-		{
-			Bitmap photo = BitmapFactory.decodeByteArray(image, 0, image.length);
+		public void onPictureTaken(byte[] image, Camera camera) {
+			Bitmap photo = BitmapFactory
+					.decodeByteArray(image, 0, image.length);
 			ImageView iv = (ImageView) findViewById(R.id.imageView1);
 			iv.setImageBitmap(photo);
 
-			UploadRequest request = new UploadRequest(photo, 90, prevPhoto, getApplicationContext());
+			UploadRequest request = new UploadRequest(photo, 90, prevPhoto,
+					getApplicationContext());
 			UploadRequestListener requestListener = new UploadRequestListener();
-			
+
 			spiceManager.execute(request, requestListener);
-			
-			prevPhoto = Bitmap.createScaledBitmap(photo, photo.getWidth(), photo.getHeight(), false);
+
+			prevPhoto = Bitmap.createScaledBitmap(photo, photo.getWidth(),
+					photo.getHeight(), false);
 		}
-    };
-	
+	};
+
 	@Override
-	protected void onStart()
-	{
+	protected void onStart() {
 		super.onStart();
 		spiceManager.start(this);
 	}
 
 	@Override
-	protected void onStop()
-	{
+	protected void onStop() {
 		spiceManager.shouldStop();
 		handler.removeCallbacks(cameraTask);
 		super.onStop();
 	}
-	
-	class UploadRequestListener implements RequestListener<String>
-	{
+
+	class UploadRequestListener implements RequestListener<String> {
 		@Override
-		public void onRequestFailure(SpiceException arg0)
-		{
+		public void onRequestFailure(SpiceException arg0) {
 			// TODO Auto-generated method stub
-			
+
 		}
 
 		@Override
-		public void onRequestSuccess(String arg0)
-		{
+		public void onRequestSuccess(String arg0) {
 		}
 	}
 }
