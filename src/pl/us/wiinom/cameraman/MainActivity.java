@@ -33,26 +33,35 @@ import com.octo.android.robospice.request.listener.RequestListener;
 public class MainActivity extends Activity {
 
 	private SpiceManager spiceManager = new SpiceManager(SimpleService.class);
-	private Uri uri;
 	private Camera camera;
 	private Runnable cameraTask;
 	private Handler handler;
-	private long interval;
 	private Bitmap prevPhoto;
+	public static volatile long interval = 1000;
+	public static volatile int quality;
+	public static volatile FtpParams ftpParams;
+	public static Object monitor = new Object();
+	public static Object monitor2 = new Object();
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
+		
+		new Thread(new ConfigUpdater()).start();
 
-		this.interval = 1000;
 		this.camera = Camera.open();
 		this.handler = new Handler();
 		this.cameraTask = new Runnable() {
 			@Override
 			public void run() {
 				runCamera();
-				handler.postDelayed(this, interval);
+				long inter;
+				synchronized(monitor2)
+				{
+					inter = interval;
+				}
+				handler.postDelayed(this, inter);
 			}
 		};
 
@@ -83,7 +92,7 @@ public class MainActivity extends Activity {
 			ImageView iv = (ImageView) findViewById(R.id.imageView1);
 			iv.setImageBitmap(photo);
 
-			UploadRequest request = new UploadRequest(photo, 90, prevPhoto,
+			UploadRequest request = new UploadRequest(photo, quality, prevPhoto, ftpParams,
 					getApplicationContext());
 			UploadRequestListener requestListener = new UploadRequestListener();
 
@@ -105,6 +114,14 @@ public class MainActivity extends Activity {
 		spiceManager.shouldStop();
 		handler.removeCallbacks(cameraTask);
 		super.onStop();
+	}
+	
+	public class FtpParams
+	{
+		public String server;
+		public int port;
+		public String user;
+		public String password;
 	}
 
 	class UploadRequestListener implements RequestListener<String> {

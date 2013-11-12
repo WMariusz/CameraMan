@@ -1,10 +1,6 @@
 package pl.us.wiinom.cameraman;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
+import java.io.*;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
@@ -17,6 +13,11 @@ import android.widget.Toast;
 
 import com.octo.android.robospice.request.SpiceRequest;
 
+import org.apache.commons.net.*;
+import org.apache.commons.net.ftp.*;
+import org.apache.commons.net.io.*;
+import org.apache.commons.net.util.*;
+
 public class UploadRequest extends SpiceRequest<String> {
 	
 	private static final String TAG = "UploadRequest";
@@ -24,20 +25,25 @@ public class UploadRequest extends SpiceRequest<String> {
 	private Bitmap bitmap;
 	private Bitmap prevBitmap;
 	private int quality;
+	private FTPClient ftpClient;
+	private MainActivity.FtpParams ftpParams;
 
 	public UploadRequest(Bitmap bitmap, int quality, Bitmap prevBitmap,
-			Context context) {
+			MainActivity.FtpParams ftpParams, Context context) {
 		super(String.class);
 		this.context = context;
 		this.bitmap = bitmap;
 		this.quality = quality;
 		this.prevBitmap = prevBitmap;
+		synchronized(MainActivity.monitor)
+		{
+			this.ftpParams = ftpParams;
+		}
 	}
 
 	@Override
 	public String loadDataFromNetwork() throws Exception {
 		// TODO:
-		// - wysy³anie na FTP zdjêcia
 		// - pobieranie z FTP konfiguracji
 		// - zapisywanie w pamiêci
 
@@ -46,7 +52,24 @@ public class UploadRequest extends SpiceRequest<String> {
 
 		save(this.bitmap, fileName, this.quality, this.context);
 
-		this.detectMotion(50, 0.5F); // jezeli wykryto ruch, wyslij fote na serwer
+		if(this.detectMotion(50, 0.5F) && this.ftpParams != null)
+		{
+			// jezeli wykryto ruch, wyslij fote na serwer
+			this.ftpClient = new FTPClient();
+			this.ftpClient.connect(this.ftpParams.server, this.ftpParams.port);
+			if(this.ftpClient.isConnected())
+			{
+				this.ftpClient.login(this.ftpParams.user, this.ftpParams.password);
+				this.ftpClient.setFileType(FTP.BINARY_FILE_TYPE);
+				this.ftpClient.enterLocalPassiveMode();
+				//this.ftpClient.changeWorkingDirectory("");
+				BufferedInputStream inputStream = new BufferedInputStream(new FileInputStream(new File(fileName)));
+				this.ftpClient.storeFile(fileName, inputStream);
+				inputStream.close();
+				this.ftpClient.logout();
+				this.ftpClient.disconnect();
+			}
+		}
 
 		return "";
 	}
