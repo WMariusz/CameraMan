@@ -48,6 +48,10 @@ public class MainActivity extends Activity {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
 		
+		synchronized(monitor)
+		{
+			ConfigUpdater.getConfigFromFile();
+		}
 		new Thread(new ConfigUpdater()).start();
 
 		this.camera = Camera.open();
