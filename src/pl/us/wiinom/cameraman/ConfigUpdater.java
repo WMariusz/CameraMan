@@ -3,6 +3,7 @@ package pl.us.wiinom.cameraman;
 import java.lang.*;
 
 public class ConfigUpdater implements Runnable {
+		
 	@Override
 	public void run()
 	{

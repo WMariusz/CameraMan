@@ -3,6 +3,6 @@
 
     <string name="app_name">CameraMan</string>
     <string name="hello_world">Hello world!</string>
-    <string name="start">Start</string>
+    <string name="start">Start/Stop</string>
 
 </resources>

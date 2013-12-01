@@ -9,8 +9,10 @@ import java.lang.*;
 import android.app.Activity;
 import android.content.ContentResolver;
 import android.content.Intent;
+import android.content.pm.ActivityInfo;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Matrix;
 import android.hardware.Camera;
 import android.net.Uri;
 import android.os.Bundle;
@@ -18,11 +20,15 @@ import android.os.Environment;
 import android.os.Handler;
 import android.provider.MediaStore;
 import android.util.Log;
+import android.view.SurfaceHolder;
+import android.view.SurfaceView;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.ImageView.ScaleType;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.octo.android.robospice.SpiceManager;
 import com.octo.android.robospice.SpiceService;
@@ -30,40 +36,44 @@ import com.octo.android.robospice.persistence.exception.SpiceException;
 import com.octo.android.robospice.request.SpiceRequest;
 import com.octo.android.robospice.request.listener.RequestListener;
 
-public class MainActivity extends Activity {
+public class MainActivity extends Activity implements SurfaceHolder.Callback {
 
+	private static String TAG = "MainActivity";
 	private SpiceManager spiceManager = new SpiceManager(SimpleService.class);
 	private Camera camera;
 	private Runnable cameraTask;
 	private Handler handler;
 	private Bitmap prevPhoto;
-	public static volatile long interval = 1000;
-	public static volatile int quality;
+	private SurfaceView mSurfaceView;
+	private SurfaceHolder mSurfaceHolder;
 	public static volatile FtpParams ftpParams;
 	public static Object monitor = new Object();
 	public static Object monitor2 = new Object();
+	private static boolean flag = false;//czy petla dzia³a
+	private Config config;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
-		
+		setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
 		synchronized(monitor)
 		{
 			ConfigUpdater.getConfigFromFile();
 		}
 		new Thread(new ConfigUpdater()).start();
-
-		this.camera = Camera.open();
+		this.config = new Config();
+		//camera.startPreview();
 		this.handler = new Handler();
 		this.cameraTask = new Runnable() {
 			@Override
 			public void run() {
+				flag = true;
 				runCamera();
 				long inter;
 				synchronized(monitor2)
 				{
-					inter = interval;
+					inter = config.interval;
 				}
 				handler.postDelayed(this, inter);
 			}
@@ -73,18 +83,38 @@ public class MainActivity extends Activity {
 		startBtn.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View v) {
-				handler.post(cameraTask);
+				if (flag) {
+					handler.removeCallbacks(cameraTask);
+					flag = false;
+				}
+				else handler.post(cameraTask);
 			}
 		});
+		
+		mSurfaceView = (SurfaceView) findViewById(R.id.surface_camera);
+		mSurfaceHolder = mSurfaceView.getHolder();
+		mSurfaceHolder.addCallback(this);
+		mSurfaceHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
 	}
 
+	/** A safe way to get an instance of the Camera object. */
+	public static Camera getCameraInstance(int id){
+	    Camera c = null;
+	    try {
+	        c = Camera.open(id); // attempt to get a Camera instance
+	    }
+	    catch (Exception e){
+	    	Log.e(TAG, e.getMessage());
+	    }
+	    return c; // returns null if camera is unavailable
+	}
+	
 	private void runCamera() {
 		try {
-			// camera.setParameters(parameters);
-			camera.startPreview();
 			camera.takePicture(null, null, cameraCallback);
+			camera.startPreview();
 		} catch (RuntimeException e) {
-			Log.d("CAMERA", e.getMessage());
+			Log.e("CAMERA", e.getMessage());
 		}
 	}
 
@@ -93,19 +123,21 @@ public class MainActivity extends Activity {
 		public void onPictureTaken(byte[] image, Camera camera) {
 			Bitmap photo = BitmapFactory
 					.decodeByteArray(image, 0, image.length);
+			
 			ImageView iv = (ImageView) findViewById(R.id.imageView1);
 			iv.setImageBitmap(photo);
-
-			UploadRequest request = new UploadRequest(photo, quality, prevPhoto, ftpParams,
+			
+			UploadRequest request = new UploadRequest(photo, config.quality, prevPhoto, ftpParams,
 					getApplicationContext());
 			UploadRequestListener requestListener = new UploadRequestListener();
 
 			spiceManager.execute(request, requestListener);
-
-			prevPhoto = Bitmap.createScaledBitmap(photo, photo.getWidth(),
-					photo.getHeight(), false);
+			
+			Toast.makeText(getApplicationContext(), "fotka", 500).show();
+			prevPhoto = Bitmap.createScaledBitmap(photo, photo.getWidth(), photo.getHeight(), false);
 		}
 	};
+	private boolean mPreviewRunning;
 
 	@Override
 	protected void onStart() {
@@ -117,7 +149,14 @@ public class MainActivity extends Activity {
 	protected void onStop() {
 		spiceManager.shouldStop();
 		handler.removeCallbacks(cameraTask);
+		flag = false;
 		super.onStop();
+	}
+	
+	@Override 
+	protected void onPause() {
+		super.onPause();
+		//camera.release();
 	}
 	
 	public class FtpParams
@@ -128,15 +167,46 @@ public class MainActivity extends Activity {
 		public String password;
 	}
 
-	class UploadRequestListener implements RequestListener<String> {
+	class UploadRequestListener implements RequestListener<Config> {
 		@Override
 		public void onRequestFailure(SpiceException arg0) {
-			// TODO Auto-generated method stub
-
+			Log.e(TAG, arg0.getMessage());
 		}
 
 		@Override
-		public void onRequestSuccess(String arg0) {
+		public void onRequestSuccess(Config arg0) {
+			config = arg0;
 		}
+	}
+
+	@Override
+	public void surfaceChanged(SurfaceHolder holder, int format, int width,
+			int height) {
+		
+		if (mPreviewRunning) camera.stopPreview();
+
+		try {
+			camera.setPreviewDisplay(holder);
+		} catch (IOException e) {
+			Log.e(TAG, e.getMessage());
+			e.printStackTrace();
+		}
+		
+		camera.startPreview();
+		mPreviewRunning = true;
+		
+	}
+
+	@Override
+	public void surfaceCreated(SurfaceHolder holder) {
+		camera = getCameraInstance(0);
+		camera.setDisplayOrientation(90);
+	}
+
+	@Override
+	public void surfaceDestroyed(SurfaceHolder holder) {
+		camera.stopPreview();
+		mPreviewRunning = false;
+		camera.release();
 	}
 }

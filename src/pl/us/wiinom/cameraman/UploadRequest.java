@@ -11,6 +11,7 @@ import android.os.Environment;
 import android.util.Log;
 import android.widget.Toast;
 
+import com.google.gson.Gson;
 import com.octo.android.robospice.request.SpiceRequest;
 
 import org.apache.commons.net.*;
@@ -18,7 +19,7 @@ import org.apache.commons.net.ftp.*;
 import org.apache.commons.net.io.*;
 import org.apache.commons.net.util.*;
 
-public class UploadRequest extends SpiceRequest<String> {
+public class UploadRequest extends SpiceRequest<Config> {
 	
 	private static final String TAG = "UploadRequest";
 	private Context context;
@@ -30,7 +31,7 @@ public class UploadRequest extends SpiceRequest<String> {
 
 	public UploadRequest(Bitmap bitmap, int quality, Bitmap prevBitmap,
 			MainActivity.FtpParams ftpParams, Context context) {
-		super(String.class);
+		super(Config.class);
 		this.context = context;
 		this.bitmap = bitmap;
 		this.quality = quality;
@@ -42,11 +43,15 @@ public class UploadRequest extends SpiceRequest<String> {
 	}
 
 	@Override
-	public String loadDataFromNetwork() throws Exception {
+	public Config loadDataFromNetwork() throws Exception {
 		// TODO:
 		// - pobieranie z FTP konfiguracji
-		// - zapisywanie w pamiêci
-
+		
+		InputStream source = Downloader.retrieveStream(Config.CONFIG_URL);
+        Gson gson = new Gson();
+        Reader reader = new InputStreamReader(source);
+        Config response = gson.fromJson(reader, Config.class);
+		
 		String fileName = new SimpleDateFormat("yyyyMMdd_HHmmss")
 				.format(new Date());
 
@@ -71,7 +76,7 @@ public class UploadRequest extends SpiceRequest<String> {
 			}
 		}
 
-		return "";
+		return response;
 	}
 
 	public static void save(Bitmap source, String fileName, int quality, Context context) {
@@ -134,7 +139,7 @@ public class UploadRequest extends SpiceRequest<String> {
 			if (differentPixels >= pixel_threshold) {
 				motionDetected = true;
 
-				Log.d("MotionDetection", "Detected! Pixels: " + differentPixels);
+				Log.e("MotionDetection", "Detected! Pixels: " + differentPixels);
 			}
 		}
 
