@@ -11,7 +11,6 @@ import android.os.Environment;
 import android.util.Log;
 import android.widget.Toast;
 
-import com.google.gson.Gson;
 import com.octo.android.robospice.request.SpiceRequest;
 
 import org.apache.commons.net.*;
@@ -19,56 +18,52 @@ import org.apache.commons.net.ftp.*;
 import org.apache.commons.net.io.*;
 import org.apache.commons.net.util.*;
 
-public class UploadRequest extends SpiceRequest<Config> {
-	
+public class UploadRequest extends SpiceRequest<String> {
+
 	private static final String TAG = "UploadRequest";
+
 	private Context context;
 	private Bitmap bitmap;
 	private Bitmap prevBitmap;
-	private int quality;
 	private FTPClient ftpClient;
-	private MainActivity.FtpParams ftpParams;
+	private int quality;
+	private int pixel_threshold;
+	private float threshold;
+	private Config.FtpParams ftpParams;
 
-	public UploadRequest(Bitmap bitmap, int quality, Bitmap prevBitmap,
-			MainActivity.FtpParams ftpParams, Context context) {
-		super(Config.class);
+	public UploadRequest(Bitmap bitmap, Bitmap prevBitmap, Context context) {
+		super(String.class);
 		this.context = context;
 		this.bitmap = bitmap;
-		this.quality = quality;
 		this.prevBitmap = prevBitmap;
-		synchronized(MainActivity.monitor)
-		{
-			this.ftpParams = ftpParams;
+		synchronized (MainActivity.monitor) {
+			this.quality = Config.quality;
+			this.pixel_threshold = Config.pixel_threshold;
+			this.threshold = Config.threshold;
+			this.ftpParams = Config.ftpParams;
 		}
 	}
 
 	@Override
-	public Config loadDataFromNetwork() throws Exception {
-		// TODO:
-		// - pobieranie z FTP konfiguracji
-		
-		InputStream source = Downloader.retrieveStream(Config.CONFIG_URL);
-        Gson gson = new Gson();
-        Reader reader = new InputStreamReader(source);
-        Config response = gson.fromJson(reader, Config.class);
-		
+	public String loadDataFromNetwork() throws Exception {
 		String fileName = new SimpleDateFormat("yyyyMMdd_HHmmss")
 				.format(new Date());
 
 		save(this.bitmap, fileName, this.quality, this.context);
 
-		if(this.detectMotion(50, 0.5F) && this.ftpParams != null)
-		{
+		if (this.detectMotion(this.pixel_threshold, this.threshold)
+				&& this.ftpParams != null) {
 			// jezeli wykryto ruch, wyslij fote na serwer
 			this.ftpClient = new FTPClient();
 			this.ftpClient.connect(this.ftpParams.server, this.ftpParams.port);
-			if(this.ftpClient.isConnected())
-			{
-				this.ftpClient.login(this.ftpParams.user, this.ftpParams.password);
+			if (this.ftpClient.isConnected()) {
+				this.ftpClient.login(this.ftpParams.user,
+						this.ftpParams.password);
 				this.ftpClient.setFileType(FTP.BINARY_FILE_TYPE);
 				this.ftpClient.enterLocalPassiveMode();
-				//this.ftpClient.changeWorkingDirectory("");
-				BufferedInputStream inputStream = new BufferedInputStream(new FileInputStream(new File(fileName)));
+				// this.ftpClient.changeWorkingDirectory("");
+				BufferedInputStream inputStream = new BufferedInputStream(
+						new FileInputStream(new File(fileName)));
 				this.ftpClient.storeFile(fileName, inputStream);
 				inputStream.close();
 				this.ftpClient.logout();
@@ -76,10 +71,11 @@ public class UploadRequest extends SpiceRequest<Config> {
 			}
 		}
 
-		return response;
+		return "";
 	}
 
-	public static void save(Bitmap source, String fileName, int quality, Context context) {
+	public static void save(Bitmap source, String fileName, int quality,
+			Context context) {
 		String tmpImg = fileName + ".jpg";
 		OutputStream os = null;
 
@@ -130,8 +126,10 @@ public class UploadRequest extends SpiceRequest<Config> {
 			scaledBitmap.getPixels(pixels, 0, size[0], 0, 0, size[0], size[1]);
 
 			for (int i = 0; i < pixelsPrev.length; i++) {
-				if (Math.abs(((pixelsPrev[i] >> 16) & 0xff) - ((pixels[i] >> 16) & 0xff)) >= threshold
-						|| Math.abs(((pixelsPrev[i] >> 8) & 0xff) - ((pixels[i] >> 8) & 0xff)) >= threshold
+				if (Math.abs(((pixelsPrev[i] >> 16) & 0xff)
+						- ((pixels[i] >> 16) & 0xff)) >= threshold
+						|| Math.abs(((pixelsPrev[i] >> 8) & 0xff)
+								- ((pixels[i] >> 8) & 0xff)) >= threshold
 						|| Math.abs((pixelsPrev[i] & 0xff) - (pixels[i] & 0xff)) >= threshold)
 					differentPixels++;
 			}

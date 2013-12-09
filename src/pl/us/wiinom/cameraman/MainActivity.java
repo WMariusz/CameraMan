@@ -1,8 +1,5 @@
 package pl.us.wiinom.cameraman;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.*;
 
@@ -38,7 +35,8 @@ import com.octo.android.robospice.request.listener.RequestListener;
 
 public class MainActivity extends Activity implements SurfaceHolder.Callback {
 
-	private static String TAG = "MainActivity";
+	private final static String TAG = "MainActivity";
+
 	private SpiceManager spiceManager = new SpiceManager(SimpleService.class);
 	private Camera camera;
 	private Runnable cameraTask;
@@ -46,24 +44,21 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
 	private Bitmap prevPhoto;
 	private SurfaceView mSurfaceView;
 	private SurfaceHolder mSurfaceHolder;
-	public static volatile FtpParams ftpParams;
 	public static Object monitor = new Object();
 	public static Object monitor2 = new Object();
-	private static boolean flag = false;//czy petla dzia³a
-	private Config config;
+	private static boolean flag = false;// czy petla dzia³a
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
 		setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
-		synchronized(monitor)
-		{
+
+		synchronized (monitor) {
 			ConfigUpdater.getConfigFromFile();
 		}
 		new Thread(new ConfigUpdater()).start();
-		this.config = new Config();
-		//camera.startPreview();
+		// camera.startPreview();
 		this.handler = new Handler();
 		this.cameraTask = new Runnable() {
 			@Override
@@ -71,9 +66,8 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
 				flag = true;
 				runCamera();
 				long inter;
-				synchronized(monitor2)
-				{
-					inter = config.interval;
+				synchronized (monitor2) {
+					inter = Config.interval;
 				}
 				handler.postDelayed(this, inter);
 			}
@@ -86,11 +80,11 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
 				if (flag) {
 					handler.removeCallbacks(cameraTask);
 					flag = false;
-				}
-				else handler.post(cameraTask);
+				} else
+					handler.post(cameraTask);
 			}
 		});
-		
+
 		mSurfaceView = (SurfaceView) findViewById(R.id.surface_camera);
 		mSurfaceHolder = mSurfaceView.getHolder();
 		mSurfaceHolder.addCallback(this);
@@ -98,17 +92,16 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
 	}
 
 	/** A safe way to get an instance of the Camera object. */
-	public static Camera getCameraInstance(int id){
-	    Camera c = null;
-	    try {
-	        c = Camera.open(id); // attempt to get a Camera instance
-	    }
-	    catch (Exception e){
-	    	Log.e(TAG, e.getMessage());
-	    }
-	    return c; // returns null if camera is unavailable
+	public static Camera getCameraInstance(int id) {
+		Camera c = null;
+		try {
+			c = Camera.open(id); // attempt to get a Camera instance
+		} catch (Exception e) {
+			Log.e(TAG, e.getMessage());
+		}
+		return c; // returns null if camera is unavailable
 	}
-	
+
 	private void runCamera() {
 		try {
 			camera.takePicture(null, null, cameraCallback);
@@ -123,18 +116,19 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
 		public void onPictureTaken(byte[] image, Camera camera) {
 			Bitmap photo = BitmapFactory
 					.decodeByteArray(image, 0, image.length);
-			
+
 			ImageView iv = (ImageView) findViewById(R.id.imageView1);
 			iv.setImageBitmap(photo);
-			
-			UploadRequest request = new UploadRequest(photo, config.quality, prevPhoto, ftpParams,
+
+			UploadRequest request = new UploadRequest(photo, prevPhoto,
 					getApplicationContext());
 			UploadRequestListener requestListener = new UploadRequestListener();
 
 			spiceManager.execute(request, requestListener);
-			
+
 			Toast.makeText(getApplicationContext(), "fotka", 500).show();
-			prevPhoto = Bitmap.createScaledBitmap(photo, photo.getWidth(), photo.getHeight(), false);
+			prevPhoto = Bitmap.createScaledBitmap(photo, photo.getWidth(),
+					photo.getHeight(), false);
 		}
 	};
 	private boolean mPreviewRunning;
@@ -152,38 +146,30 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
 		flag = false;
 		super.onStop();
 	}
-	
-	@Override 
+
+	@Override
 	protected void onPause() {
 		super.onPause();
-		//camera.release();
-	}
-	
-	public class FtpParams
-	{
-		public String server;
-		public int port;
-		public String user;
-		public String password;
+		// camera.release();
 	}
 
-	class UploadRequestListener implements RequestListener<Config> {
+	class UploadRequestListener implements RequestListener<String> {
 		@Override
 		public void onRequestFailure(SpiceException arg0) {
 			Log.e(TAG, arg0.getMessage());
 		}
 
 		@Override
-		public void onRequestSuccess(Config arg0) {
-			config = arg0;
+		public void onRequestSuccess(String arg0) {
 		}
 	}
 
 	@Override
 	public void surfaceChanged(SurfaceHolder holder, int format, int width,
 			int height) {
-		
-		if (mPreviewRunning) camera.stopPreview();
+
+		if (mPreviewRunning)
+			camera.stopPreview();
 
 		try {
 			camera.setPreviewDisplay(holder);
@@ -191,10 +177,10 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
 			Log.e(TAG, e.getMessage());
 			e.printStackTrace();
 		}
-		
+
 		camera.startPreview();
 		mPreviewRunning = true;
-		
+
 	}
 
 	@Override
