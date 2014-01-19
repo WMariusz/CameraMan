@@ -206,14 +206,17 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
 		public void onRequestFailure(SpiceException arg0) {
 			Log.e(TAG, arg0.getMessage());
 			Toast.makeText(getApplicationContext(), "Upload Failed", Toast.LENGTH_SHORT).show();
+			GetConfigRequest request = new GetConfigRequest();
+			spiceManager.execute(request, Config.CACHE_KEY, config.interval, new GetConfigListener());
 		}
 
 		@Override
 		public void onRequestSuccess(Integer result) {
+			GetConfigRequest request = new GetConfigRequest();
+			spiceManager.execute(request, Config.CACHE_KEY, config.interval, new GetConfigListener());
 			switch(result) {
 			case 0:
-				GetConfigRequest request = new GetConfigRequest();
-				spiceManager.execute(request, Config.CACHE_KEY, config.interval, new GetConfigListener());
+				
 				Toast.makeText(getApplicationContext(), "Upload Success", Toast.LENGTH_SHORT).show();
 				break;
 			case 1:
