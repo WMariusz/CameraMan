@@ -53,7 +53,6 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
 	public static Object monitor2 = new Object();
 	
 	private static boolean flag = false;// czy petla dzia³a
-	private Config config;
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -62,11 +61,10 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
 		setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
 		
 		spiceManager = new SpiceManager(SimpleService.class);
-		config = new Config();
 		synchronized (monitor) {
 			ConfigUpdater.getConfigFromFile();
 		}
-		new Thread(new ConfigUpdater()).start();
+		new Thread(new ConfigUpdater(getApplicationContext())).start();
 		// camera.startPreview();
 		this.handler = new Handler();
 		this.cameraTask = new Runnable() {
@@ -76,7 +74,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
 				runCamera();
 				long inter;
 				synchronized (monitor2) {
-					inter = config.interval;
+					inter = Config.interval;
 				}
 				handler.postDelayed(this, inter);
 			}
@@ -98,14 +96,6 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
 		mSurfaceHolder = mSurfaceView.getHolder();
 		mSurfaceHolder.addCallback(this);
 		mSurfaceHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
-	}
-
-	@Override
-	protected void onResume() {
-		super.onResume();
-		GetConfigRequest request = new GetConfigRequest();
-		spiceManager.execute(request, Config.CACHE_KEY, config.interval, new GetConfigListener());
-		
 	}
 	
 	/** A safe way to get an instance of the Camera object. */
@@ -138,7 +128,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
 			iv.setImageBitmap(photo);
 
 			UploadRequest request = new UploadRequest(photo, prevPhoto,
-					getApplicationContext(), config);
+					getApplicationContext());
 			UploadRequestListener requestListener = new UploadRequestListener();
 
 			spiceManager.execute(request, requestListener);
@@ -201,45 +191,14 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
 		camera.release();
 	}
 
-	class UploadRequestListener implements RequestListener<Integer> {
+	class UploadRequestListener implements RequestListener<String> {
 		@Override
-		public void onRequestFailure(SpiceException arg0) {
-			Log.e(TAG, arg0.getMessage());
-			Toast.makeText(getApplicationContext(), "Upload Failed", Toast.LENGTH_SHORT).show();
-			GetConfigRequest request = new GetConfigRequest();
-			spiceManager.execute(request, Config.CACHE_KEY, config.interval, new GetConfigListener());
-		}
+        public void onRequestFailure(SpiceException arg0) {
+                Log.e(TAG, arg0.getMessage());
+        }
 
-		@Override
-		public void onRequestSuccess(Integer result) {
-			GetConfigRequest request = new GetConfigRequest();
-			spiceManager.execute(request, Config.CACHE_KEY, config.interval, new GetConfigListener());
-			switch(result) {
-			case 0:
-				
-				Toast.makeText(getApplicationContext(), "Upload Success", Toast.LENGTH_SHORT).show();
-				break;
-			case 1:
-				//zdjecie nie mia³o ró¿nic
-				break;
-			case 2:
-				Toast.makeText(getApplicationContext(), "Upload Failed", Toast.LENGTH_SHORT).show();
-				break;
-			}
-		}
-	}
-	
-	class GetConfigListener implements RequestListener<Config> {
-		@Override
-		public void onRequestFailure(SpiceException arg0) {
-			Log.e(TAG, arg0.getMessage());
-			Toast.makeText(getApplicationContext(), "GetConfig Failed", Toast.LENGTH_SHORT).show();
-		}
-
-		@Override
-		public void onRequestSuccess(Config result) {
-			config = result;
-			Toast.makeText(getApplicationContext(), "GetConfig Success", Toast.LENGTH_SHORT).show();
-		}
+        @Override
+        public void onRequestSuccess(String arg0) {
+        }
 	}
 }
