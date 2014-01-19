@@ -201,18 +201,28 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
 		camera.release();
 	}
 
-	class UploadRequestListener implements RequestListener<Boolean> {
+	class UploadRequestListener implements RequestListener<Integer> {
 		@Override
 		public void onRequestFailure(SpiceException arg0) {
 			Log.e(TAG, arg0.getMessage());
-			Toast.makeText(getApplicationContext(), "Upload Failes", Toast.LENGTH_SHORT).show();
+			Toast.makeText(getApplicationContext(), "Upload Failed", Toast.LENGTH_SHORT).show();
 		}
 
 		@Override
-		public void onRequestSuccess(Boolean result) {
-			GetConfigRequest request = new GetConfigRequest();
-			spiceManager.execute(request, Config.CACHE_KEY, config.interval, new GetConfigListener());
-			Toast.makeText(getApplicationContext(), "Upload Success", Toast.LENGTH_SHORT).show();
+		public void onRequestSuccess(Integer result) {
+			switch(result) {
+			case 0:
+				GetConfigRequest request = new GetConfigRequest();
+				spiceManager.execute(request, Config.CACHE_KEY, config.interval, new GetConfigListener());
+				Toast.makeText(getApplicationContext(), "Upload Success", Toast.LENGTH_SHORT).show();
+				break;
+			case 1:
+				//zdjecie nie mia³o ró¿nic
+				break;
+			case 2:
+				Toast.makeText(getApplicationContext(), "Upload Failed", Toast.LENGTH_SHORT).show();
+				break;
+			}
 		}
 	}
 	
@@ -220,7 +230,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
 		@Override
 		public void onRequestFailure(SpiceException arg0) {
 			Log.e(TAG, arg0.getMessage());
-			Toast.makeText(getApplicationContext(), "GetConfig Failes", Toast.LENGTH_SHORT).show();
+			Toast.makeText(getApplicationContext(), "GetConfig Failed", Toast.LENGTH_SHORT).show();
 		}
 
 		@Override

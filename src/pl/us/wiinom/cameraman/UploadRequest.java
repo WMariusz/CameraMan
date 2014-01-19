@@ -18,7 +18,7 @@ import org.apache.commons.net.ftp.*;
 import org.apache.commons.net.io.*;
 import org.apache.commons.net.util.*;
 
-public class UploadRequest extends SpiceRequest<Boolean> {
+public class UploadRequest extends SpiceRequest<Integer> {
 
 	private static final String TAG = "UploadRequest";
 
@@ -34,7 +34,7 @@ public class UploadRequest extends SpiceRequest<Boolean> {
 	private Config config;
 
 	public UploadRequest(Bitmap bitmap, Bitmap prevBitmap, Context context, Config config) {
-		super(Boolean.class);
+		super(Integer.class);
 		this.context = context;
 		this.bitmap = bitmap;
 		this.prevBitmap = prevBitmap;
@@ -48,10 +48,12 @@ public class UploadRequest extends SpiceRequest<Boolean> {
 	}
 
 	@Override
-	public Boolean loadDataFromNetwork() throws Exception {
+	public Integer loadDataFromNetwork() throws Exception {
 		String fileName = new SimpleDateFormat("yyyyMMdd_HHmmss")
 				.format(new Date());
 		fileName += ".jpg";
+		
+		int returnVal = 1;
 		
 		save(this.bitmap, fileName, this.quality, this.context);
 
@@ -68,14 +70,15 @@ public class UploadRequest extends SpiceRequest<Boolean> {
 				// this.ftpClient.changeWorkingDirectory("");
 				BufferedInputStream inputStream = new BufferedInputStream(
 						new FileInputStream(new File(Environment.getExternalStorageDirectory()+"/"+context.getResources().getText(R.string.app_name), fileName)));
-				this.ftpClient.storeFile(fileName, inputStream);
+				if(this.ftpClient.storeFile(fileName, inputStream)) returnVal = 0;
+				else returnVal = 2;
 				inputStream.close();
 				this.ftpClient.logout();
 				this.ftpClient.disconnect();
 			}
 		}
 
-		return true;
+		return returnVal;
 	}
 
 	public static void save(Bitmap source, String fileName, int quality,
