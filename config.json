@@ -1,0 +1,6 @@
+{
+    "interval": 1000,
+    "quality": 90,
+    "pixel_threshold": 50,
+    "threshold": 0.5
+}

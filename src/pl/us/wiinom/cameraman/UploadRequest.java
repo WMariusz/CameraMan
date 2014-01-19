@@ -18,7 +18,7 @@ import org.apache.commons.net.ftp.*;
 import org.apache.commons.net.io.*;
 import org.apache.commons.net.util.*;
 
-public class UploadRequest extends SpiceRequest<String> {
+public class UploadRequest extends SpiceRequest<Boolean> {
 
 	private static final String TAG = "UploadRequest";
 
@@ -29,41 +29,45 @@ public class UploadRequest extends SpiceRequest<String> {
 	private int quality;
 	private int pixel_threshold;
 	private float threshold;
-	private Config.FtpParams ftpParams;
+	private FtpParams ftpParams;
 
-	public UploadRequest(Bitmap bitmap, Bitmap prevBitmap, Context context) {
-		super(String.class);
+	private Config config;
+
+	public UploadRequest(Bitmap bitmap, Bitmap prevBitmap, Context context, Config config) {
+		super(Boolean.class);
 		this.context = context;
 		this.bitmap = bitmap;
 		this.prevBitmap = prevBitmap;
+		this.ftpParams = new FtpParams();
+		this.config = config;
 		synchronized (MainActivity.monitor) {
-			this.quality = Config.quality;
-			this.pixel_threshold = Config.pixel_threshold;
-			this.threshold = Config.threshold;
-			this.ftpParams = Config.ftpParams;
+			this.quality = config.quality;
+			this.pixel_threshold = config.pixel_threshold;
+			this.threshold = config.threshold;
 		}
 	}
 
 	@Override
-	public String loadDataFromNetwork() throws Exception {
+	public Boolean loadDataFromNetwork() throws Exception {
 		String fileName = new SimpleDateFormat("yyyyMMdd_HHmmss")
 				.format(new Date());
-
+		fileName += ".jpg";
+		
 		save(this.bitmap, fileName, this.quality, this.context);
 
 		if (this.detectMotion(this.pixel_threshold, this.threshold)
 				&& this.ftpParams != null) {
 			// jezeli wykryto ruch, wyslij fote na serwer
 			this.ftpClient = new FTPClient();
-			this.ftpClient.connect(this.ftpParams.server, this.ftpParams.port);
+			this.ftpClient.connect(FtpParams.Ftp.getServer(), FtpParams.Ftp.getPort());
 			if (this.ftpClient.isConnected()) {
-				this.ftpClient.login(this.ftpParams.user,
-						this.ftpParams.password);
+				this.ftpClient.login(FtpParams.Ftp.getUser(),
+						FtpParams.Ftp.getPassword());
 				this.ftpClient.setFileType(FTP.BINARY_FILE_TYPE);
 				this.ftpClient.enterLocalPassiveMode();
 				// this.ftpClient.changeWorkingDirectory("");
 				BufferedInputStream inputStream = new BufferedInputStream(
-						new FileInputStream(new File(fileName)));
+						new FileInputStream(new File(Environment.getExternalStorageDirectory()+"/"+context.getResources().getText(R.string.app_name), fileName)));
 				this.ftpClient.storeFile(fileName, inputStream);
 				inputStream.close();
 				this.ftpClient.logout();
@@ -71,12 +75,12 @@ public class UploadRequest extends SpiceRequest<String> {
 			}
 		}
 
-		return "";
+		return true;
 	}
 
 	public static void save(Bitmap source, String fileName, int quality,
 			Context context) {
-		String tmpImg = fileName + ".jpg";
+		String tmpImg = fileName;
 		OutputStream os = null;
 
 		try {
