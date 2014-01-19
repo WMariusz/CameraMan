@@ -67,7 +67,7 @@ public class UploadRequest extends SpiceRequest<Integer> {
 						FtpParams.Ftp.getPassword());
 				this.ftpClient.setFileType(FTP.BINARY_FILE_TYPE);
 				this.ftpClient.enterLocalPassiveMode();
-				// this.ftpClient.changeWorkingDirectory("");
+			this.ftpClient.changeWorkingDirectory("/web/PUM/");
 				BufferedInputStream inputStream = new BufferedInputStream(
 						new FileInputStream(new File(Environment.getExternalStorageDirectory()+"/"+context.getResources().getText(R.string.app_name), fileName)));
 				if(this.ftpClient.storeFile(fileName, inputStream)) returnVal = 0;
