@@ -1,4 +1,5 @@
 {
+	"config_interval": 60000,
     "interval": 1000,
     "quality": 90,
     "pixel_threshold": 50,

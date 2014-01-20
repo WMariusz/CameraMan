@@ -2,10 +2,11 @@ package pl.us.wiinom.cameraman;
 
 public class Config {
 
-	public final static String CACHE_KEY = "Config";
-	
-	public final static String CONFIG_URL = "http://tmp.lukasz.az.pl/PUM/config.json";// url do pliku konfiguracyjnego
-	
+	public final static String CONFIG_URL = "http://tmp.lukasz.az.pl/PUM/config.json";
+	public final static String config_location = "/web/PUM/";
+	public final static String config_file = "config.json";
+	public final static String upload_location = "/web/PUM/";
+
 	public static volatile long config_interval = 1000 * 60;
 	public static volatile long interval = 1000;
 	public static volatile int quality = 90;

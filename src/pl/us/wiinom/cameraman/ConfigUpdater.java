@@ -18,14 +18,17 @@ import com.google.gson.Gson;
 
 public class ConfigUpdater implements Runnable {
 
-	private Context context;
+	private static Object fileMonitor;
+	private static Context context;
 	private FTPClient ftpClient;
 	private Handler handler;
+	private long configInterval;
 
 	public ConfigUpdater(Context context) {
-		this.context = context;
+		ConfigUpdater.context = context;
 		this.ftpClient = new FTPClient();
 		this.handler = new Handler();
+		ConfigUpdater.fileMonitor = new Object();
 	}
 
 	@Override
@@ -38,6 +41,10 @@ public class ConfigUpdater implements Runnable {
 		 * 2. Pobieranie pliku konfiguracyjnego z ftp i nadpisanie w pamieci
 		 * telefonu
 		 */
+		synchronized (MainActivity.monitor3) {
+			this.configInterval = Config.config_interval;
+		}
+
 		try {
 			this.ftpClient.connect(FtpParams.Ftp.getServer(),
 					FtpParams.Ftp.getPort());
@@ -46,16 +53,22 @@ public class ConfigUpdater implements Runnable {
 						FtpParams.Ftp.getPassword());
 				this.ftpClient.setFileType(FTP.BINARY_FILE_TYPE);
 				this.ftpClient.enterLocalPassiveMode();
-				this.ftpClient.changeWorkingDirectory("/web/PUM/");
-				BufferedOutputStream outputStream = new BufferedOutputStream(
-						new FileOutputStream(new File(
-								Environment.getExternalStorageDirectory()
-										+ "/"
-										+ context.getResources().getText(
-												R.string.app_name),
-								"config.json")));
-				this.ftpClient.retrieveFile("config.json", outputStream);
-				outputStream.close();
+				this.ftpClient.changeWorkingDirectory(Config.config_location);
+
+				synchronized (ConfigUpdater.fileMonitor) {
+					BufferedOutputStream outputStream = new BufferedOutputStream(
+							new FileOutputStream(new File(
+									Environment.getExternalStorageDirectory()
+											+ "/"
+											+ ConfigUpdater.context
+													.getResources().getText(
+															R.string.app_name),
+									"config.json")));
+					this.ftpClient.retrieveFile(Config.config_file,
+							outputStream);
+					outputStream.close();
+				}
+
 				this.ftpClient.noop();
 				this.ftpClient.logout();
 				this.ftpClient.disconnect();
@@ -65,17 +78,41 @@ public class ConfigUpdater implements Runnable {
 
 		// 3. Powtarzanie 1. 2. w petli z opoznieniem zgodnym z parametrem
 		// pobranym z configa
-		handler.postDelayed(this, Config.config_interval);
+		handler.postDelayed(this, this.configInterval);
 	}
 
 	public static synchronized void getConfigFromFile() {
-		synchronized (MainActivity.monitor) {
-			// 1. a) Odczytanie pliku konfiguracyjnego i ustawienie zmiennych
-			// klasy Config (!!! bez Config.interval !!!)
-		}
-		synchronized (MainActivity.monitor2) {
-			// 1. b) Odczytanie pliku konfiguracyjnego i ustawienie intervalu
-			// aparatu (Config.interval)
+		synchronized (ConfigUpdater.fileMonitor) {
+			try {
+				Config responseConfig = new Gson().fromJson(
+						new BufferedReader(new FileReader(new File(Environment
+								.getExternalStorageDirectory()
+								+ "/"
+								+ ConfigUpdater.context
+										.getText(R.string.app_name),
+								"config.json"))), Config.class);
+
+				synchronized (MainActivity.monitor) {
+					// 1. a) Odczytanie pliku konfiguracyjnego i ustawienie
+					// zmiennych
+					// klasy Config (!!! bez Config.interval !!!)
+					Config.quality = responseConfig.quality;
+					Config.pixel_threshold = responseConfig.pixel_threshold;
+					Config.threshold = responseConfig.threshold;
+				}
+
+				synchronized (MainActivity.monitor2) {
+					// 1. b) Odczytanie pliku konfiguracyjnego i ustawienie
+					// intervalu
+					// aparatu (Config.interval)
+					Config.interval = responseConfig.interval;
+				}
+
+				synchronized (MainActivity.monitor3) {
+					Config.config_interval = responseConfig.config_interval;
+				}
+			} catch (Exception e) {
+			}
 		}
 	}
 }

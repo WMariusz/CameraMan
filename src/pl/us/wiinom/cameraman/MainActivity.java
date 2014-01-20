@@ -51,6 +51,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
 	
 	public static Object monitor = new Object();
 	public static Object monitor2 = new Object();
+	public static Object monitor3 = new Object();
 	
 	private static boolean flag = false;// czy petla dzia³a
 	
