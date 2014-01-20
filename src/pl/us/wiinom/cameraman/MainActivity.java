@@ -62,10 +62,13 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
 		setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
 		
 		spiceManager = new SpiceManager(SimpleService.class);
+		
+		ConfigUpdater configUpdater = new ConfigUpdater(getApplicationContext());
 		synchronized (monitor) {
 			ConfigUpdater.getConfigFromFile();
 		}
-		new Thread(new ConfigUpdater(getApplicationContext())).start();
+		new Thread(configUpdater).start();
+		
 		// camera.startPreview();
 		this.handler = new Handler();
 		this.cameraTask = new Runnable() {
