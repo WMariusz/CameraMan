@@ -26,7 +26,6 @@ public class ConfigUpdater implements Runnable {
 
 	public ConfigUpdater(Context context) {
 		ConfigUpdater.context = context;
-		this.ftpClient = new FTPClient();
 		this.handler = new Handler();
 		ConfigUpdater.fileMonitor = new Object();
 	}
@@ -46,11 +45,12 @@ public class ConfigUpdater implements Runnable {
 		}
 
 		try {
-			this.ftpClient.connect(FtpParams.Ftp.getServer(),
-					FtpParams.Ftp.getPort());
+			this.ftpClient = new FTPClient();
+			this.ftpClient.connect(FtpParams.getServer(),
+					FtpParams.getPort());
 			if (this.ftpClient.isConnected()) {
-				this.ftpClient.login(FtpParams.Ftp.getUser(),
-						FtpParams.Ftp.getPassword());
+				this.ftpClient.login(FtpParams.getUser(),
+						FtpParams.getPassword());
 				this.ftpClient.setFileType(FTP.BINARY_FILE_TYPE);
 				this.ftpClient.enterLocalPassiveMode();
 				this.ftpClient.changeWorkingDirectory(Config.config_location);

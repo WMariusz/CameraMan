@@ -2,7 +2,7 @@ package pl.us.wiinom.cameraman;
 
 public class FtpParams {
 	
-	public static final FtpParams Ftp = new FtpParams();
+	//public static final FtpParams Ftp = new FtpParams();
 	
 	public FtpParams() {
 		server = "tmp.lukasz.az.pl";
@@ -11,10 +11,10 @@ public class FtpParams {
 		password = "android123";
 	}
 	
-	private static volatile String server;
-	private static volatile int port;
-	private static volatile String user;
-	private static volatile String password;
+	private static volatile String server = "tmp.lukasz.az.pl";
+	private static volatile int port = 21;
+	private static volatile String user = "lukasz_tmp";
+	private static volatile String password = "android123";
 
 	static String getServer() {
 		return server;

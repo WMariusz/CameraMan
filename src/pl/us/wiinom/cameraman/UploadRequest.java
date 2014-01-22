@@ -29,14 +29,12 @@ public class UploadRequest extends SpiceRequest<String> {
 	private int quality;
 	private int pixel_threshold;
 	private float threshold;
-	private FtpParams ftpParams;
 
 	public UploadRequest(Bitmap bitmap, Bitmap prevBitmap, Context context) {
 		super(String.class);
 		this.context = context;
 		this.bitmap = bitmap;
 		this.prevBitmap = prevBitmap;
-		this.ftpParams = new FtpParams();
 		synchronized (MainActivity.monitor) {
 			this.quality = Config.quality;
 			this.pixel_threshold = Config.pixel_threshold;
@@ -52,15 +50,14 @@ public class UploadRequest extends SpiceRequest<String> {
 
 		save(this.bitmap, fileName, this.quality, this.context);
 
-		if (this.detectMotion(this.pixel_threshold, this.threshold)
-				&& this.ftpParams != null) {
+		if (this.detectMotion(this.pixel_threshold, this.threshold)) {
 			// jezeli wykryto ruch, wyslij fote na serwer
 			this.ftpClient = new FTPClient();
-			this.ftpClient.connect(FtpParams.Ftp.getServer(),
-					FtpParams.Ftp.getPort());
+			this.ftpClient.connect(FtpParams.getServer(),
+					FtpParams.getPort());
 			if (this.ftpClient.isConnected()) {
-				this.ftpClient.login(FtpParams.Ftp.getUser(),
-						FtpParams.Ftp.getPassword());
+				this.ftpClient.login(FtpParams.getUser(),
+						FtpParams.getPassword());
 				this.ftpClient.setFileType(FTP.BINARY_FILE_TYPE);
 				this.ftpClient.enterLocalPassiveMode();
 				this.ftpClient.changeWorkingDirectory(Config.upload_location);
