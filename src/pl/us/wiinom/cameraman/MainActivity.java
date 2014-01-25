@@ -14,9 +14,11 @@ import android.graphics.BitmapFactory;
 import android.graphics.Matrix;
 import android.hardware.Camera;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
+import android.os.StrictMode;
 import android.provider.MediaStore;
 import android.util.Log;
 import android.view.SurfaceHolder;
@@ -38,7 +40,7 @@ import com.octo.android.robospice.request.listener.RequestListener;
 
 public class MainActivity extends Activity implements SurfaceHolder.Callback {
 
-	private final static String TAG = "MainActivity";
+	private final static String TAG = "MyDebugApp";
 
 	private SpiceManager spiceManager;
 	
@@ -63,7 +65,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
 		
 		spiceManager = new SpiceManager(SimpleService.class);
 		
-		ConfigUpdater configUpdater = new ConfigUpdater(getApplicationContext());
+		ConfigUpdater configUpdater = new ConfigUpdater(getApplicationContext(), spiceManager);
 		synchronized (monitor) {
 			ConfigUpdater.getConfigFromFile();
 		}
@@ -115,8 +117,11 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
 
 	private void runCamera() {
 		try {
-			camera.takePicture(null, null, cameraCallback);
-			camera.startPreview();
+			TakePictureTask cameraTask = new TakePictureTask();
+			cameraTask.execute();
+			//camera.takePicture(null, null, cameraCallback);
+			//Log.d("MotionDetection", "FOTKAcallback");
+			//camera.startPreview();
 		} catch (RuntimeException e) {
 			Log.e("CAMERA", e.getMessage());
 		}
@@ -125,12 +130,10 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
 	Camera.PictureCallback cameraCallback = new Camera.PictureCallback() {
 		@Override
 		public void onPictureTaken(byte[] image, Camera camera) {
+			Log.d("MotionDetection", "FOTKA");
 			Bitmap photo = BitmapFactory
 					.decodeByteArray(image, 0, image.length);
-
-			ImageView iv = (ImageView) findViewById(R.id.imageView1);
-			iv.setImageBitmap(photo);
-
+			
 			UploadRequest request = new UploadRequest(photo, prevPhoto,
 					getApplicationContext());
 			UploadRequestListener requestListener = new UploadRequestListener();
@@ -204,5 +207,22 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback {
         @Override
         public void onRequestSuccess(String arg0) {
         }
+	}
+	
+	private class TakePictureTask extends AsyncTask<Void, Void, Void> {
+
+	    @Override
+	    protected void onPostExecute(Void result) {
+	        // This returns the preview back to the live camera feed
+	        camera.startPreview();
+	    }
+
+	    @Override
+	    protected Void doInBackground(Void... params) {
+	    	camera.takePicture(null, null, cameraCallback);
+
+	        return null;
+	    }
+
 	}
 }
