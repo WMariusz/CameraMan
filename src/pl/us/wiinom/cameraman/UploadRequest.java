@@ -27,7 +27,7 @@ public class UploadRequest extends SpiceRequest<String> {
 	private Bitmap prevBitmap;
 	private FTPClient ftpClient;
 	private int quality;
-	private int pixel_threshold;
+	private float pixel_threshold;
 	private float threshold;
 
 	public UploadRequest(Bitmap bitmap, Bitmap prevBitmap, Context context) {
@@ -102,23 +102,30 @@ public class UploadRequest extends SpiceRequest<String> {
 		}
 	}
 
-	private boolean detectMotion(int pixel_threshold, float threshold) {
+	private boolean detectMotion(float pixel_threshold, float threshold) {
 		boolean motionDetected = false;
 
 		if (this.prevBitmap != null) {
 			int maxLuminance = 255;
 
-			if (threshold >= 1)
-				threshold = maxLuminance;
-			else if (threshold <= 0)
-				threshold = 0;
-			else
-				threshold = threshold * maxLuminance;
-
 			int[] size = { 640, 480 };
 			int[] pixelsPrev = new int[size[0] * size[1]];
 			int[] pixels = new int[size[0] * size[1]];
 			int differentPixels = 0;
+			
+			if (threshold >= 1)
+				threshold = maxLuminance;
+			else if (threshold <= 0)
+				threshold = 0F;
+			else
+				threshold = threshold * maxLuminance;
+			
+			if (pixel_threshold >= 1)
+				pixel_threshold = pixelsPrev.length;
+			else if (pixel_threshold <= 0)
+				pixel_threshold = 0F;
+			else
+				pixel_threshold = pixel_threshold * pixelsPrev.length;
 
 			this.prevBitmap = Bitmap.createScaledBitmap(this.prevBitmap,
 					size[0], size[1], false);
