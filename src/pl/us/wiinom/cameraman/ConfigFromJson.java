@@ -5,7 +5,7 @@ public class ConfigFromJson {
 	public  long config_interval;
 	public  long interval;
 	public  int quality;
-	public  int pixel_threshold;
+	public  float pixel_threshold;
 	public  float threshold;
 
 	

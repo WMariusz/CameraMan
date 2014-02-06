@@ -5,16 +5,16 @@ public class FtpParams {
 	//public static final FtpParams Ftp = new FtpParams();
 	
 	public FtpParams() {
-		server = "tmp.lukasz.az.pl";
+		server = "ftp.strefa.pl";
 		port = 21;
-		user = "lukasz_tmp";
-		password = "android123";
+		user = "admin+tmp1389983364.strefa.pl";
+		password = "sAserebeHuswu4aw";
 	}
 	
-	private static volatile String server = "tmp.lukasz.az.pl";
+	private static volatile String server = "ftp.strefa.pl";
 	private static volatile int port = 21;
-	private static volatile String user = "lukasz_tmp";
-	private static volatile String password = "android123";
+	private static volatile String user = "admin+tmp1389983364.strefa.pl";
+	private static volatile String password = "sAserebeHuswu4aw";
 
 	static String getServer() {
 		return server;
